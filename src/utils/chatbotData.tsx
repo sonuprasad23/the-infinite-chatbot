@@ -1,7 +1,5 @@
-// This file is now src/utils/chatbotData.tsx
-
 import React from 'react';
-import { SigmaIcon, MicroscopeIcon, HeartPulseIcon } from 'lucide-react';
+import { SigmaIcon, MicroscopeIcon, HeartPulseIcon, Code2Icon } from 'lucide-react';
 
 export interface ChatbotData {
   id: string;
@@ -15,13 +13,13 @@ export interface ChatbotData {
 }
 
 export const chatbots: ChatbotData[] = [{
-  id: 'finance',
-  title: 'FinBot - Finance Explainer',
-  description: 'Demystifying complex financial topics with clear, educational insights. No advice, just knowledge.',
-  icon: <SigmaIcon size={24} className="text-white" />,
-  userTypes: ['Beginners', 'Students', 'Curious Minds'],
-  features: ['Simplifies stocks, bonds, and crypto', 'Uses real-world analogies', 'Educational focus, never advice', 'Built-in safety disclaimers'],
-  bgColor: 'bg-gradient-to-br from-yellow-500 to-amber-600',
+  id: 'coding',
+  title: 'Deva - Coding Assistant',
+  description: 'Your expert pair programmer for algorithms, databases, web dev, and more. Get clean code and clear explanations.',
+  icon: <Code2Icon size={24} className="text-white" />,
+  userTypes: ['Developers', 'Students', 'Interview Prep'],
+  features: ['Generates code in any language', 'Explains complex algorithms', 'Debugs and optimizes your code', 'Structured code & text output'],
+  bgColor: 'bg-gradient-to-br from-blue-600 to-indigo-800',
   textColor: 'text-white'
 }, {
   id: 'biology',
@@ -30,7 +28,16 @@ export const chatbots: ChatbotData[] = [{
   icon: <MicroscopeIcon size={24} className="text-white" />,
   userTypes: ['High School Students', 'College Students', 'Lifelong Learners'],
   features: ['Adaptive question difficulty', 'Encourages critical thinking', 'Personalized feedback', 'Summarizes study sessions'],
-  bgColor: 'bg-gradient-to-br from-cyan-500 to-blue-600',
+  bgColor: 'bg-gradient-to-br from-cyan-500 to-teal-600',
+  textColor: 'text-white'
+}, {
+  id: 'finance',
+  title: 'FinBot - Finance Explainer',
+  description: 'Demystifying complex financial topics with clear, educational insights. No advice, just knowledge.',
+  icon: <SigmaIcon size={24} className="text-white" />,
+  userTypes: ['Beginners', 'Students', 'Curious Minds'],
+  features: ['Simplifies stocks, bonds, and crypto', 'Uses real-world analogies', 'Educational focus, never advice', 'Built-in safety disclaimers'],
+  bgColor: 'bg-gradient-to-br from-yellow-500 to-amber-600',
   textColor: 'text-white'
 }, {
   id: 'maternal',
