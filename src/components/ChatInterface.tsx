@@ -14,23 +14,18 @@ interface Message {
 interface ChatInterfaceProps {
   chatbotId: string;
   chatbotName: string;
+  chatbotDescription: string;
   primaryColor: string;
   onBack: () => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, primaryColor, onBack }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, chatbotDescription, primaryColor, onBack }) => {
   const { darkMode } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId] = useState<string>(`shunya_session_${Date.now()}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!API_BASE_URL) {
-      console.error("VITE_API_BACKEND_URL is not set!");
-    }
-  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,11 +34,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, p
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    setIsTyping(true);
+    const welcomeTimer = setTimeout(() => {
+      const welcomeMessage: Message = {
+        id: `bot_welcome_${Date.now()}`,
+        text: `Hello! I'm ${chatbotName}, your specialized assistant for ${chatbotDescription.toLowerCase()}. How can I help you today?`,
+        sender: 'bot',
+      };
+      setMessages([welcomeMessage]);
+      setIsTyping(false);
+    }, 1200);
+
+    return () => clearTimeout(welcomeTimer);
+  }, [chatbotName, chatbotDescription]);
   
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isTyping || !API_BASE_URL) return;
 
     const userMessage: Message = { id: `user_${Date.now()}`, text: inputValue, sender: 'user' };
+    
     setMessages(prev => [...prev, userMessage]);
     const currentInput = inputValue;
     setInputValue('');
@@ -87,7 +98,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, p
                 setMessages(prev => [...prev, { id: botMessageId, text: data.chunk, sender: 'bot' }]);
                 isFirstChunk = false;
             } else {
-                setMessages(prev => prev.map(msg => msg.id === botMessageId ? { ...msg, text: msg.text + data.chunk } : msg));
+                setMessages(prev => prev.map(msg => 
+                    msg.id === botMessageId ? { ...msg, text: msg.text + data.chunk } : msg
+                ));
             }
         }
     };
