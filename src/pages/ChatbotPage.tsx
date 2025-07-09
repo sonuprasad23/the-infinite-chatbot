@@ -1,7 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ChatInterface from '../components/ChatInterface';
-import { chatbots } from '../utils/chatbotData';
+// THE FIX IS HERE: Explicitly import the .tsx file
+import { chatbots } from '../utils/chatbotData.tsx';
 
 const ChatbotPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
