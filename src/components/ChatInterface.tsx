@@ -26,10 +26,8 @@ interface ChatInterfaceProps {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, chatbotDescription, primaryColor, onBack }) => {
   const { darkMode } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [thinkingStatus, setThinkingStatus] = useState<string | null>(null);
   const [sessionId] = useState<string>(`infinite_session_${Date.now()}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -42,13 +40,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, c
     setMessages([welcomeMessage]);
   }, [chatbotName, chatbotDescription]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, streamingMessage, thinkingStatus]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
   
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isProcessing) return;
@@ -59,9 +53,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, c
     const currentInput = inputValue;
     setInputValue('');
     setIsProcessing(true);
-    if (chatbotId === 'coding') {
-      setThinkingStatus("Initializing...");
-    }
+
+    const botMessageId = `bot_${Date.now()}`;
+    // Add the initial, empty message object to the state
+    setMessages(prev => [...prev, { id: botMessageId, sender: 'bot', explanation: '' }]);
+    
+    let accumulatedString = '';
 
     const eventSource = new EventSource(`${API_BASE_URL}/chat?` + new URLSearchParams({
         sessionId: sessionId,
@@ -72,57 +69,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, c
     eventSource.onmessage = (event) => {
         if (event.data === "[DONE]") {
             setIsProcessing(false);
-            setThinkingStatus(null);
-            setStreamingMessage(prev => {
-              if (prev) setMessages(current => [...current, prev]);
-              return null;
-            });
             eventSource.close();
             return;
         }
         
         const data = JSON.parse(event.data);
-
-        if (data.status) {
-            setThinkingStatus(data.status);
-            return;
-        }
-
         if (data.error) {
-            const errorMsg = { id: `bot_error_${Date.now()}`, sender: 'bot' as const, explanation: `Sorry, an error occurred: ${data.error}`};
-            setMessages(prev => [...prev, errorMsg]);
-            setStreamingMessage(null);
+            setMessages(prev => prev.map(msg => msg.id === botMessageId ? { ...msg, explanation: `Sorry, an error occurred: ${data.error}` } : msg));
             setIsProcessing(false);
-            setThinkingStatus(null);
             eventSource.close();
             return;
         }
-
-        setThinkingStatus(null); // A content chunk has arrived, stop showing "thinking"
-
-        if (chatbotId === 'coding') {
-            if (data.content) {
-                setStreamingMessage({ id: `bot_${Date.now()}`, sender: 'bot', ...data.content });
-            }
-        } else { // Handle streaming text for other bots
-            if (data.explanation_chunk) {
-                setStreamingMessage(prev => {
-                    if (prev) {
-                        return { ...prev, explanation: prev.explanation + data.explanation_chunk };
-                    }
-                    return { id: `bot_${Date.now()}`, sender: 'bot', explanation: data.explanation_chunk };
-                });
+        
+        if (data.chunk) {
+            accumulatedString += data.chunk;
+            if (chatbotId === 'coding') {
+                try {
+                    // For the coder, try to parse the accumulated JSON on each chunk
+                    const parsedData = JSON.parse(accumulatedString);
+                    setMessages(prev => prev.map(msg => msg.id === botMessageId ? { ...msg, ...parsedData } : msg));
+                } catch (e) {
+                    // JSON is not complete yet, so do nothing and wait for more chunks
+                }
+            } else {
+                // For other bots, just stream the explanation text
+                setMessages(prev => prev.map(msg => msg.id === botMessageId ? { ...msg, explanation: accumulatedString } : msg));
             }
         }
     };
 
     eventSource.onerror = (err) => {
         console.error("EventSource failed:", err);
-        const errorMsg = { id: `bot_error_${Date.now()}`, sender: 'bot' as const, explanation: "Sorry, a connection error occurred." };
-        setMessages(prev => [...prev, errorMsg]);
-        setStreamingMessage(null);
+        setMessages(prev => prev.map(msg => msg.id === botMessageId ? { ...msg, explanation: "Sorry, a connection error occurred." } : msg));
         setIsProcessing(false);
-        setThinkingStatus(null);
         eventSource.close();
     };
   };
@@ -147,7 +126,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, c
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-            {/* Render completed messages from history */}
             {messages.map(message => (
               <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`flex items-start max-w-[85%] md:max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -161,24 +139,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatbotId, chatbotName, c
                 </div>
               </div>
             ))}
-
-            {/* Render the currently streaming message */}
-            {streamingMessage && (
-                <div className={`flex justify-start`}>
-                    <div className={`flex items-start max-w-[85%] md:max-w-[80%] flex-row`}>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${primaryColor} text-white mr-2`}>
-                            <BotIcon size={20} />
-                        </div>
-                        <div className={`rounded-2xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-none shadow-sm`}>
-                            {streamingMessage.explanation && <div className="px-4 py-3 prose dark:prose-invert max-w-none prose-p:my-0" dangerouslySetInnerHTML={createMarkup(streamingMessage.explanation)} />}
-                            {streamingMessage.code && <CodeBlock code={streamingMessage.code} language={streamingMessage.language || ''} />}
-                        </div>
+            {isProcessing && (
+                <div className="flex justify-start">
+                    <div className="flex items-start max-w-[80%] flex-row">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${primaryColor} text-white mr-2`}><BotIcon size={20} /></div>
+                        <div className="rounded-2xl px-4 py-3 bg-white dark:bg-gray-800 rounded-tl-none shadow-sm"><div className="flex space-x-1"><div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse" style={{animationDelay: '0ms'}}></div><div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse" style={{animationDelay: '150ms'}}></div><div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse" style={{animationDelay: '300ms'}}></div></div></div>
                     </div>
                 </div>
             )}
-            
-            {isProcessing && thinkingStatus && <ThinkingIndicator status={thinkingStatus} primaryColor={primaryColor} />}
-            
             <div ref={messagesEndRef} />
         </div>
 
