@@ -21,7 +21,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language }) => {
   return (
     <div className="relative my-4 rounded-lg bg-[#1e1e1e] shadow-lg">
       <div className="flex items-center justify-between px-4 py-2 bg-gray-700/50 rounded-t-lg">
-        <span className="text-xs font-sans text-gray-400">{language || 'code'}</span>
+        <span className="text-xs font-sans text-gray-400 capitalize">{language || 'code'}</span>
         <button
           onClick={handleCopy}
           className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-300 rounded-md hover:bg-gray-600/50 transition-colors"
@@ -33,7 +33,20 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language }) => {
       <SyntaxHighlighter
         language={language}
         style={vscDarkPlus}
-        customStyle={{ margin: 0, padding: '1rem', fontSize: '0.875rem' }}
+        
+        // This customStyle object is where the magic happens.
+        // We are overriding the default browser styles for the <pre> tag.
+        customStyle={{ 
+          margin: 0, 
+          padding: '1rem', 
+          fontSize: '0.875rem',
+          // THE FIX: These two lines make the code block responsive.
+          whiteSpace: 'pre-wrap',   // Allows lines to wrap.
+          wordBreak: 'break-all',   // Forces long strings (like URLs) to break.
+        }}
+        
+        // This prop from the library also helps with line wrapping.
+        // We use both for a bulletproof solution.
         wrapLongLines={true}
       >
         {code}
