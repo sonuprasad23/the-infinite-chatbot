@@ -33,20 +33,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language }) => {
       <SyntaxHighlighter
         language={language}
         style={vscDarkPlus}
-        
-        // This customStyle object is where the magic happens.
-        // We are overriding the default browser styles for the <pre> tag.
-        customStyle={{ 
-          margin: 0, 
-          padding: '1rem', 
+        customStyle={{
+          margin: 0,
+          padding: '1rem',
           fontSize: '0.875rem',
-          // THE FIX: These two lines make the code block responsive.
-          whiteSpace: 'pre-wrap',   // Allows lines to wrap.
-          wordBreak: 'break-all',   // Forces long strings (like URLs) to break.
+          whiteSpace: 'pre-wrap', // Allows lines to wrap
+          wordBreak: 'break-all',   // Breaks long words/strings
         }}
-        
-        // This prop from the library also helps with line wrapping.
-        // We use both for a bulletproof solution.
         wrapLongLines={true}
       >
         {code}
